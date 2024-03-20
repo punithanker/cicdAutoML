@@ -1,0 +1,26 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Build and Push Docker Image - latest
+        if: ${{ contains(github.event.head_commit.modified, 'latest') }}
+        env:
+          ECR_REGISTRY: "training"
+          ECR_REPOSITORY: "model-1"
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd ./model-1
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 030384658056.dkr.ecr.us-east-1.amazonaws.com/training
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
